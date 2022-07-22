@@ -3,11 +3,11 @@ let accessToken = "";
 let urlInput = "";
 let customFields = [];
 
-const x = Math.floor(Math.random() * 1) + 1;
-const img = `images/NH_${x}.png`;
+// const x = Math.floor(Math.random() * 1) + 1;
+// const img = `images/NH_${x}.png`;
 
-document.getElementById("ACNH-img").src = img;
-document.getElementById("ACNH-img").style.display = "block";
+// document.getElementById("ACNH-img").src = img;
+// document.getElementById("ACNH-img").style.display = "block";
 
 document.getElementById("url-input").value = getProjectURL("project-url");
 document.getElementById("query-btn").onclick = () => {
@@ -353,7 +353,7 @@ async function query() {
 
   const issues = await getAllIssues(org, projNum, customFields);
   if (!issues) return;
-
+  console.log(issues);
   document.getElementById("return-val").innerText = JSON.stringify(
     issues,
     null,
