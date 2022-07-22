@@ -1,6 +1,21 @@
 // run 'npm start' to start the app up
 let accessToken = "";
 let urlInput = "";
+let customFields = [];
+
+const x = Math.floor(Math.random() * 1) + 1;
+const img = `images/NH_${x}.png`;
+
+document.getElementById("ACNH-img").src = img;
+document.getElementById("ACNH-img").style.display = "block";
+
+document.getElementById("url-input").value = getProjectURL("project-url");
+document.getElementById("query-btn").onclick = () => {
+  query();
+};
+document.getElementById("export-btn").onclick = () => {
+  exportToCSV();
+};
 
 /**
  * Runs a GraphQL query for a GitHub Project (new)
@@ -13,7 +28,7 @@ async function requestProject(org, projNum, cursor) {
   const data = JSON.stringify({
     /**
      * Notes on the query:
-     *    - for now, we are covering Issue and DraftIssue types (not PullRequest yet)
+     *    - for now, we are covering Issue and DraftIssue types (not PullRequest)
      *    - gets all items (rows) in the project
      *    - getting the first 10 assignees, first 100 labels, first 100 fieldValues
      *      - assuming there won't be more than this. otherwise will get complicated with pagination
@@ -85,30 +100,24 @@ async function requestProject(org, projNum, cursor) {
       Authorization: `bearer ${accessToken}`,
     },
     body: data,
-  })
-    .then(async (response) => {
+  }).then(async (response) => {
+    if (response.status >= 200 && response.status <= 299) {
       const body = await response.text();
       return body;
-    })
-    .catch((err) => {
-      console.warn("Something went wrong while trying to query ${urlInput}");
-      document.getElementById("return-val").innerText =
-        "Something went wrong while trying to query ${urlInput} :(";
-      return "{}";
-    });
+    } else {
+      reportError(
+        `Something went wrong while trying to query ${urlInput}. See console for details.`,
+        `Something went wrong while trying to query ${urlInput}: ${response.statusText}`
+      );
+      return "";
+    }
+  });
 
   return response;
 }
 
 async function requestProjectFields(org, projNum) {
   const data = JSON.stringify({
-    /**
-     * Notes on the query:
-     *    - for now, we are covering Issue and DraftIssue types (not PullRequest yet)
-     *    - gets all items (rows) in the project
-     *    - getting the first 10 assignees, first 100 labels, first 100 fieldValues
-     *      - assuming there won't be more than this. otherwise will get complicated with pagination
-     */
     query: `query ($org: String!, $projNum: Int!) {
               organization(login: $org) {
                 name
@@ -138,17 +147,20 @@ async function requestProjectFields(org, projNum) {
       Authorization: `bearer ${accessToken}`,
     },
     body: data,
-  })
-    .then(async (response) => {
+  }).then(async (response) => {
+    if (response.status >= 200 && response.status <= 299) {
       const body = await response.text();
       return body;
-    })
-    .catch((err) => {
-      console.warn("Something went wrong while trying to query ${urlInput}");
-      document.getElementById("return-val").innerText =
-        "Something went wrong while trying to query ${urlInput} :(";
-      return "{}";
-    });
+    } else {
+      reportError(
+        `Something went wrong while trying to query ${urlInput}. See console for details.`,
+        `Something went wrong while trying to query ${urlInput}: ${response.statusText}`
+      );
+
+      return "";
+    }
+  });
+
   return response;
 }
 
@@ -194,8 +206,6 @@ function buildResult(items, fields) {
     }
     // other fields
     const allFields = element.fieldValues.nodes;
-    console.log(customFields);
-    console.log(allFields);
     customFields.forEach((f) => {
       const fieldItem = allFields.find((item) => {
         return item.projectField.name == f;
@@ -233,12 +243,20 @@ async function getAllIssues(org, projNum, fields) {
   let cursor = "";
   const issues = { items: [] };
   do {
-    let body = JSON.parse(
-      await requestProject(org, projNum, hasNextPage ? cursor : undefined)
+    let body = await requestProject(
+      org,
+      projNum,
+      hasNextPage ? cursor : undefined
     );
-    console.log(body);
+    if (!body) {
+      return;
+    }
+    body = JSON.parse(body);
     if (!body.data.organization) {
-      console.error("An error occured while querying for project information.");
+      reportError(
+        "An error occured. See console for details.",
+        "An error occured while querying for project information. Check that Project URL is correct."
+      );
       return;
     }
     console.log(
@@ -252,16 +270,22 @@ async function getAllIssues(org, projNum, fields) {
     let pageInfo = body.data.organization.projectNext.items.pageInfo;
     hasNextPage = pageInfo.hasNextPage;
     cursor = pageInfo.endCursor;
-    // console.log(hasNextPage, cursor);
   } while (hasNextPage);
 
   return issues;
 }
 
 async function getCustomFields(org, projNum) {
-  const result = JSON.parse(await requestProjectFields(org, projNum));
+  let result = await requestProjectFields(org, projNum);
+  if (!result) {
+    return;
+  }
+  result = JSON.parse(result);
   if (!result.data.organization) {
-    console.error("An error occured while querying for project information.");
+    reportError(
+      "An error occured. See console for details.",
+      "An error occured while querying for project information. Check that Project URL is correct."
+    );
     return;
   }
 
@@ -274,7 +298,7 @@ async function getCustomFields(org, projNum) {
     "Assignees",
     "Labels",
     // We currently aren't pulling the following on the query.
-    "Linked Pull Requests",
+    "Linked pull requests",
     "Reviewers",
     "Repository",
     "Milestone",
@@ -294,14 +318,20 @@ async function query() {
   document.getElementById("spinner").style.display = "block";
   document.getElementById("export-btn").setAttribute("disabled", "");
   urlInput = document.getElementById("url-input").value.trim();
-  // check if the input box is empty
+  // check if the input boxes are empty
   if (!urlInput) {
-    console.warn("No URL given :P");
+    reportError(
+      "Missing GitHub Projects URL :(",
+      "Missing GitHub Projects URL"
+    );
     return;
   }
   accessToken = document.getElementById("token-input").value.trim();
   if (!accessToken) {
-    console.warn("No access token given :P");
+    reportError(
+      "Missing GitHub Personal Access Token :(",
+      "Missing GitHub Personal Access Token"
+    );
     return;
   }
   let url;
@@ -309,18 +339,21 @@ async function query() {
   try {
     url = new window.URL(urlInput);
   } catch {
-    console.warn("Bad URL :(");
+    reportError("Malformed URL :(", "Malformed URL");
     return;
   }
   const pathArr = url.pathname.split("/").filter(Boolean);
-  // console.log(pathArr);
   const org = pathArr[1];
   const projNum = parseInt(pathArr[3]);
   // might want to do some checks to make sure the above is valid
+
   setProjectURL(urlInput);
   customFields = await getCustomFields(org, projNum);
-  // console.log("Custom fields:", fields);
+  if (!customFields) return;
+
   const issues = await getAllIssues(org, projNum, customFields);
+  if (!issues) return;
+
   document.getElementById("return-val").innerText = JSON.stringify(
     issues,
     null,
@@ -352,6 +385,10 @@ function exportToCSV() {
             line = line.concat(item[prop].join("; "), ",");
           } else {
             line = line.concat(item[prop].toString(), ",");
+            // "," will mess up the csv formatting
+            line = line.replace(",", "");
+            // "#" hides everything behind it for some reason
+            line = line.replace("#", "");
           }
         }
         line = line.substring(0, line.length - 1);
@@ -379,12 +416,8 @@ function getProjectURL(name) {
   return localStorage.getItem("project-url");
 }
 
-let customFields = [];
-
-document.getElementById("url-input").value = getProjectURL("project-url");
-document.getElementById("query-btn").onclick = () => {
-  query();
-};
-document.getElementById("export-btn").onclick = () => {
-  exportToCSV();
-};
+function reportError(outputText, consoleText) {
+  document.getElementById("spinner").style.display = "none";
+  document.getElementById("return-val").innerText = outputText;
+  console.error(consoleText);
+}

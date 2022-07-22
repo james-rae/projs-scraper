@@ -36,19 +36,27 @@
         <div
           class="d-flex flex-column justify-content-center align-items-center mx-5"
         >
+          <p class="font-weight-bold">Today's Assistant 🎉</p>
+          <img
+            src=""
+            alt="Animal Crossing New Horizons villager"
+            id="ACNH-img"
+            class="m-2"
+            style="height: 30%; display: none"
+          />
           <input
             type="text"
             class="form-control my-2"
             style="width: 30em"
             id="url-input"
-            placeholder="project url"
+            placeholder="GitHub Projects url"
           />
           <input
             type="text"
             class="form-control my-2"
             style="width: 30em"
             id="token-input"
-            placeholder="access token"
+            placeholder="Personal Access Token"
           />
           <div class="d-flex">
             <button type="button" class="btn btn-primary my-2" id="query-btn">
@@ -64,12 +72,15 @@
             </div>
           </div>
         </div>
+        <div class="vr my-5"></div>
         <div
           class="d-flex flex-column justify-content-center align-items-center mx-5"
         >
           <div class="card my-2" style="width: 45vw">
             <div class="card-body overflow-auto" style="max-height: 80vh">
-              <pre class="card-text" id="return-val">data</pre>
+              <pre class="card-text text-wrap" id="return-val">
+                data will appear here 👀
+              </pre>
             </div>
           </div>
           <button
