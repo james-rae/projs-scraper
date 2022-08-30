@@ -4,7 +4,6 @@ let urlInput = "";
 let customFields = [];
 
 const x = Math.floor(Math.random() * 3) + 1;
-console.log(x);
 const img = `images/NH_${x}.png`;
 
 document.getElementById("ACNH-img").src = img;
