@@ -3,11 +3,12 @@ let accessToken = "";
 let urlInput = "";
 let customFields = [];
 
-// const x = Math.floor(Math.random() * 1) + 1;
-// const img = `images/NH_${x}.png`;
+const x = Math.floor(Math.random() * 3) + 1;
+console.log(x);
+const img = `images/NH_${x}.png`;
 
-// document.getElementById("ACNH-img").src = img;
-// document.getElementById("ACNH-img").style.display = "block";
+document.getElementById("ACNH-img").src = img;
+document.getElementById("ACNH-img").style.display = "block";
 
 document.getElementById("url-input").value = getProjectURL("project-url");
 document.getElementById("query-btn").onclick = () => {
